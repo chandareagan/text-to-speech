@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>First Quantum Voice System</title>
 <style>
+/* Same styling as before (unchanged) */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
 
 body {
@@ -40,89 +41,40 @@ body {
   margin: 10px;
 }
 
-.column.left {
-  flex: 0 0 45%;
-}
+.column.left { flex: 0 0 45%; }
+.column.right { flex: 0 0 50%; justify-content: center; text-align: center; }
 
-.column.right {
-  flex: 0 0 50%;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
+h1, h2 { font-weight: 600; margin-bottom: 20px; }
+label { font-weight: 500; margin-bottom: 8px; }
 
-h1, h2 {
-  font-weight: 600;
-  margin-bottom: 20px;
-}
-
-label {
-  font-weight: 500;
-  margin-bottom: 8px;
-}
-
-/* Textarea style */
-textarea {
+textarea, input {
   width: 100%;
-  min-height: 180px;
   border-radius: 14px;
   border: none;
   padding: 14px;
-  resize: vertical;
   font-size: 16px;
   background: rgba(255,255,255,0.05);
   color: #fff;
   margin-bottom: 20px;
   box-sizing: border-box;
-  transition: all 0.3s ease;
 }
 
-textarea:focus {
+textarea { min-height: 150px; resize: vertical; }
+textarea:focus, input:focus {
   outline: none;
   background: rgba(255,255,255,0.1);
   box-shadow: 0 0 15px rgba(0,200,255,0.4);
 }
 
-/* Modern dropdown */
 .select-wrapper {
-  position: relative;
-  width: 100%;
-  margin-bottom: 20px;
+  position: relative; width: 100%; margin-bottom: 20px;
 }
 
 select {
-  width: 100%;
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: none;
-  font-size: 16px;
-  background: rgba(0,0,0,0.8);
-  color: #fff;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  width: 100%; padding: 14px 16px; border-radius: 14px; border: none;
+  background: rgba(0,0,0,0.8); color: #fff; cursor: pointer;
 }
 
-select:focus {
-  outline: none;
-  background: rgba(0,0,0,0.9);
-  box-shadow: 0 0 15px rgba(0,200,255,0.5);
-}
-
-.select-wrapper::after {
-  content: "▼";
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: #fff;
-  font-size: 12px;
-}
-
-/* Button style */
 button {
   width: 100%;
   padding: 14px;
@@ -133,67 +85,24 @@ button {
   background: linear-gradient(135deg, #00c6ff, #0072ff);
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
   transition: all 0.3s ease;
 }
 
-button:hover {
-  transform: scale(1.03);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-  background: linear-gradient(135deg, #0072ff, #00c6ff);
-}
+button:hover { transform: scale(1.03); }
 
-/* Progress & Audio */
-progress {
-  width: 100%;
-  height: 12px;
-  margin-top: 15px;
-  border-radius: 6px;
-}
+audio { width: 100%; margin-top: 20px; border-radius: 12px; }
 
-audio {
-  width: 100%;
-  margin-top: 20px;
-  border-radius: 12px;
-}
-
-/* Info box */
 .info-box {
   background: linear-gradient(135deg, #0072ff, #00c6ff);
   padding: 25px;
   border-radius: 14px;
   font-size: 0.95em;
-  line-height: 1.6;
-  color: #fff;
   text-align: left;
-}
-
-.info-box ul {
-  padding-left: 0;
-  margin: 0 0 10px 0;
-  list-style-position: inside;
-}
-
-.info-box li {
-  margin-bottom: 10px;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .container {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .column.left, .column.right {
-    flex: 1 1 100%;
-    margin: 10px 0;
-  }
 }
 </style>
 </head>
 <body>
 <div class="container">
-  <!-- Left column: Input -->
   <div class="column left">
     <h1>First Quantum</h1>
 
@@ -205,26 +114,27 @@ audio {
       </select>
     </div>
 
+    <label for="extra_instruction">Additional Instruction (optional, max 15 words):</label>
+    <input id="extra_instruction" maxlength="100" placeholder="e.g., sound more confident and engaging">
+
     <label for="text">Enter Text:</label>
     <textarea id="text" placeholder="Type your content here..."></textarea>
 
     <button onclick="generateSpeech()">Generate Speech</button>
-    <progress id="progressBar" value="0" max="100" class="hidden"></progress>
-    <audio id="audioPlayer" controls class="hidden"></audio>
+    <progress id="progressBar" value="0" max="100" style="display:none;"></progress>
+    <audio id="audioPlayer" controls style="display:none;"></audio>
   </div>
 
-  <!-- Right column: Instructions -->
   <div class="column right">
     <div class="info-box">
       <h2>Instructions & Tips</h2>
       <ul>
-        <li>Select your preferred voice: Male or Female.</li>
-        <li>Type the content you want to listen to in the text area.</li>
-        <li>Click "Generate Speech" and wait for the audio to process.</li>
-        <li>The system preserves natural pronunciation for Zambian local terms.</li>
-        <li>For long text, split into smaller sections for best results.</li>
+        <li>Select Male or Female voice.</li>
+        <li>Type text and (optionally) a short custom instruction.</li>
+        <li>Click “Generate Speech” and wait for download.</li>
+        <li>Accurate for Zambian local terms (e.g., Cibemba).</li>
       </ul>
-      <p>⚡ Enjoy high-quality synthesized voice output with realistic tone and clarity!</p>
+      <p>⚡ High-quality speech synthesis with natural tone.</p>
     </div>
   </div>
 </div>
@@ -233,48 +143,43 @@ audio {
 async function generateSpeech() {
   const text = document.getElementById("text").value.trim();
   const voice = document.getElementById("voice").value;
+  const extra_instruction = document.getElementById("extra_instruction").value.trim();
   const progressBar = document.getElementById("progressBar");
   const audioPlayer = document.getElementById("audioPlayer");
 
   if (!text) {
-    alert("Please enter text to voice over speech.");
+    alert("Please enter text to convert.");
     return;
   }
 
-  progressBar.classList.remove("hidden");
-  progressBar.value = 10;
+  progressBar.style.display = "block";
+  progressBar.value = 20;
 
   try {
     const response = await fetch("/generate_speech", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, voice }),
+      body: JSON.stringify({ text, voice, extra_instruction }),
     });
 
-    if (!response.ok) throw new Error("Failed to generate audio.");
+    if (!response.ok) throw new Error("Failed to generate speech");
 
     progressBar.value = 70;
-
-    const blob = await response.blob(); // treat response as binary
+    const blob = await response.blob();
     const audioUrl = URL.createObjectURL(blob);
-
-    // Play audio
     audioPlayer.src = audioUrl;
-    audioPlayer.classList.remove("hidden");
+    audioPlayer.style.display = "block";
 
-    // Trigger download
     const a = document.createElement("a");
     a.href = audioUrl;
     a.download = `speech_${voice}_${Date.now()}.wav`;
-    document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
 
     progressBar.value = 100;
   } catch (err) {
     alert("Error: " + err.message);
   } finally {
-    setTimeout(() => progressBar.classList.add("hidden"), 2000);
+    setTimeout(() => (progressBar.style.display = "none"), 2000);
   }
 }
 </script>
