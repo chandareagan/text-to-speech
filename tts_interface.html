@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>First Quantum Voice System</title>
 <style>
-/* Same styling as before (unchanged) */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
 
 body {
@@ -57,6 +56,7 @@ textarea, input {
   color: #fff;
   margin-bottom: 20px;
   box-sizing: border-box;
+  transition: all 0.3s ease;
 }
 
 textarea { min-height: 150px; resize: vertical; }
@@ -66,13 +66,30 @@ textarea:focus, input:focus {
   box-shadow: 0 0 15px rgba(0,200,255,0.4);
 }
 
-.select-wrapper {
-  position: relative; width: 100%; margin-bottom: 20px;
-}
+.select-wrapper { position: relative; width: 100%; margin-bottom: 20px; }
 
 select {
-  width: 100%; padding: 14px 16px; border-radius: 14px; border: none;
-  background: rgba(0,0,0,0.8); color: #fff; cursor: pointer;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: none;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.select-wrapper::after {
+  content: "▼";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #fff;
+  font-size: 12px;
 }
 
 button {
@@ -85,12 +102,38 @@ button {
   background: linear-gradient(135deg, #00c6ff, #0072ff);
   color: #fff;
   cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
   transition: all 0.3s ease;
 }
 
-button:hover { transform: scale(1.03); }
+button:hover {
+  transform: scale(1.03);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  background: linear-gradient(135deg, #0072ff, #00c6ff);
+}
 
-audio { width: 100%; margin-top: 20px; border-radius: 12px; }
+progress {
+  width: 100%;
+  height: 12px;
+  border-radius: 6px;
+  margin-top: 15px;
+  appearance: none;
+}
+progress::-webkit-progress-bar {
+  background-color: rgba(255,255,255,0.1);
+  border-radius: 6px;
+}
+progress::-webkit-progress-value {
+  background-color: #00c6ff;
+  border-radius: 6px;
+}
+
+audio {
+  width: 100%;
+  margin-top: 20px;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
 
 .info-box {
   background: linear-gradient(135deg, #0072ff, #00c6ff);
@@ -98,6 +141,23 @@ audio { width: 100%; margin-top: 20px; border-radius: 12px; }
   border-radius: 14px;
   font-size: 0.95em;
   text-align: left;
+}
+.info-box ul {
+  padding-left: 0;
+  list-style-position: inside;
+}
+.info-box li { margin-bottom: 10px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .column.left, .column.right {
+    flex: 1 1 100%;
+    margin: 10px 0;
+  }
 }
 </style>
 </head>
@@ -114,8 +174,8 @@ audio { width: 100%; margin-top: 20px; border-radius: 12px; }
       </select>
     </div>
 
-    <label for="extra_instruction">Additional Instruction (optional, max 15 words):</label>
-    <input id="extra_instruction" maxlength="100" placeholder="e.g., sound more confident and engaging">
+    <label for="additionalInstructions">Additional Instruction (optional, ≤15 words):</label>
+    <input id="additionalInstructions" maxlength="100" placeholder="e.g., speak slowly and confidently">
 
     <label for="text">Enter Text:</label>
     <textarea id="text" placeholder="Type your content here..."></textarea>
@@ -130,11 +190,12 @@ audio { width: 100%; margin-top: 20px; border-radius: 12px; }
       <h2>Instructions & Tips</h2>
       <ul>
         <li>Select Male or Female voice.</li>
-        <li>Type text and (optionally) a short custom instruction.</li>
-        <li>Click “Generate Speech” and wait for download.</li>
-        <li>Accurate for Zambian local terms (e.g., Cibemba).</li>
+        <li>Type the text and (optionally) a short instruction (≤15 words).</li>
+        <li>Click “Generate Speech” to hear your voice output.</li>
+        <li>Automatic download of the WAV file will start when ready.</li>
+        <li>Voices are optimized for Zambian English and local names.</li>
       </ul>
-      <p>⚡ High-quality speech synthesis with natural tone.</p>
+      <p>⚡ Natural and high-quality speech powered by Gemini.</p>
     </div>
   </div>
 </div>
@@ -143,7 +204,7 @@ audio { width: 100%; margin-top: 20px; border-radius: 12px; }
 async function generateSpeech() {
   const text = document.getElementById("text").value.trim();
   const voice = document.getElementById("voice").value;
-  const extra_instruction = document.getElementById("extra_instruction").value.trim();
+  const additionalInstructions = document.getElementById("additionalInstructions").value.trim();
   const progressBar = document.getElementById("progressBar");
   const audioPlayer = document.getElementById("audioPlayer");
 
@@ -153,33 +214,41 @@ async function generateSpeech() {
   }
 
   progressBar.style.display = "block";
-  progressBar.value = 20;
+  progressBar.value = 15;
 
   try {
     const response = await fetch("/generate_speech", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, voice, extra_instruction }),
+      body: JSON.stringify({ text, voice, additionalInstructions }),
     });
 
-    if (!response.ok) throw new Error("Failed to generate speech");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to generate speech.");
+    }
 
-    progressBar.value = 70;
+    progressBar.value = 60;
     const blob = await response.blob();
+
+    progressBar.value = 90;
     const audioUrl = URL.createObjectURL(blob);
     audioPlayer.src = audioUrl;
     audioPlayer.style.display = "block";
 
+    // Auto-download WAV
     const a = document.createElement("a");
     a.href = audioUrl;
     a.download = `speech_${voice}_${Date.now()}.wav`;
+    document.body.appendChild(a);
     a.click();
+    a.remove();
 
     progressBar.value = 100;
   } catch (err) {
     alert("Error: " + err.message);
   } finally {
-    setTimeout(() => (progressBar.style.display = "none"), 2000);
+    setTimeout(() => (progressBar.style.display = "none"), 2500);
   }
 }
 </script>
