@@ -2,6 +2,8 @@
 # -------------------------------
 # Flask backend for Gemini Text-to-Speech (TTS)
 # Includes full tone/speaking instructions
+# Adds optional extra instructions (≤15 words)
+# Uses backup API key if primary quota fails
 # Automatically serves audio as downloadable file
 # -------------------------------
 
@@ -17,14 +19,22 @@ import glob
 app = Flask(__name__, static_folder='.')
 
 # -------------------------------
+# Configuration
+# -------------------------------
+PRIMARY_API_KEY = "AIzaSyDEabvFms5_MLzM1EwHox2UB_vI6uG3wPk"
+BACKUP_API_KEY = "AIzaSyCDJnYLIn0VODW1DNjZYwPiCKRnK2QpuIQ"
+MODEL_NAME = "gemini-2.5-flash-preview-tts"
+
+
+# -------------------------------
 # Helper functions
 # -------------------------------
-
 def save_binary_file(file_name, data):
     """Save generated audio data to a file."""
     with open(file_name, "wb") as f:
         f.write(data)
     print(f"✅ File saved: {file_name}")
+
 
 def convert_to_wav(audio_data: bytes, mime_type: str) -> bytes:
     """Convert raw audio data to a WAV format if needed."""
@@ -56,6 +66,7 @@ def convert_to_wav(audio_data: bytes, mime_type: str) -> bytes:
     )
     return header + audio_data
 
+
 def parse_audio_mime_type(mime_type: str) -> dict:
     """Extract bits per sample and sample rate from audio MIME type."""
     bits_per_sample = 16
@@ -75,10 +86,22 @@ def parse_audio_mime_type(mime_type: str) -> dict:
                 pass
     return {"bits_per_sample": bits_per_sample, "rate": rate}
 
+
+def get_client():
+    """Try primary API key first, then backup if quota fails."""
+    try:
+        client = genai.Client(api_key=PRIMARY_API_KEY)
+        client.models.list()  # quick sanity check
+        return client
+    except Exception as e:
+        print(f"⚠️ Primary API key failed: {e}")
+        print("🔁 Switching to backup API key...")
+        return genai.Client(api_key=BACKUP_API_KEY)
+
+
 # -------------------------------
 # Routes
 # -------------------------------
-
 @app.route('/')
 def home():
     return app.send_static_file('tts_interface.html')
@@ -88,51 +111,53 @@ def home():
 def generate_speech():
     """Generate speech from text using Gemini and send it as a downloadable file."""
     try:
-        # Cleanup old files (older than 3 months ~ 90 days)
-        three_months_in_seconds = 90 * 24 * 60 * 60
+        # Cleanup old files (older than 3 months)
+        three_months = 90 * 24 * 60 * 60
         for f in glob.glob("speech_*.wav"):
-            if time.time() - os.path.getmtime(f) > three_months_in_seconds:
+            if time.time() - os.path.getmtime(f) > three_months:
                 os.remove(f)
 
-        api_key = "AIzaSyDEabvFms5_MLzM1EwHox2UB_vI6uG3wPk"
-        client = genai.Client(api_key=api_key)
-        model = "gemini-2.5-flash-preview-tts"
-
         data = request.get_json()
-        text_to_speak = data.get("text", "")
+        text_to_speak = data.get("text", "").strip()
         voice_choice = data.get("voice", "male")
+        additional_instructions = data.get("additionalInstructions", "").strip()
 
-        if not text_to_speak.strip():
+        if not text_to_speak:
             return jsonify({"error": "Text input is empty"}), 400
 
-        # Voice instructions
+        # Initialize client
+        client = get_client()
+
+        # Voice configuration
         if voice_choice.lower() == "female":
             voice_name = "Aoede"
             tone_instruction = (
-                "Speak with a clear, natural female voice, speak as if you are Zambian, "
-                "like a lecturer who wants the students to understand, also add weight to the voice. "
-                "As you speak, pronounce any Zambian local language terms, such as Cibemba, correctly. "
-                "Do not exaggerate the tone."
+                "Speak with a clear, natural female voice, as if you are Zambian, "
+                "like a lecturer who wants students to understand, with balanced tone. "
+                "Pronounce local Zambian language terms correctly, like Cibemba or Tonga."
             )
         else:
             voice_name = "Enceladus"
             tone_instruction = (
                 "Speak with a deep African male voice, as if you are Zambian, "
-                "like a lecturer who wants the students to understand. "
-                "As you speak, pronounce any Zambian local language terms, such as Cibemba, correctly. "
-                "Do not exaggerate the tone."
+                "like a lecturer who wants students to understand. "
+                "Pronounce local Zambian language terms correctly, such as Cibemba or Nyanja."
             )
+
+        # Append user extra instruction (≤15 words)
+        if additional_instructions:
+            word_count = len(additional_instructions.split())
+            if word_count > 15:
+                return jsonify({"error": "Additional instructions must be 15 words or fewer."}), 400
+            tone_instruction += " " + additional_instructions
 
         final_text = f"{tone_instruction}\nNow say the following words:\n{text_to_speak}"
 
         contents = [
-            types.Content(
-                role="user",
-                parts=[types.Part.from_text(text=final_text)],
-            ),
+            types.Content(role="user", parts=[types.Part.from_text(text=final_text)]),
         ]
 
-        generate_content_config = types.GenerateContentConfig(
+        config = types.GenerateContentConfig(
             temperature=1,
             response_modalities=["audio"],
             speech_config=types.SpeechConfig(
@@ -143,9 +168,9 @@ def generate_speech():
         )
 
         for chunk in client.models.generate_content_stream(
-            model=model,
+            model=MODEL_NAME,
             contents=contents,
-            config=generate_content_config,
+            config=config,
         ):
             if (
                 not chunk.candidates
@@ -158,35 +183,22 @@ def generate_speech():
             if part.inline_data and part.inline_data.data:
                 timestamp = int(time.time())
                 file_name = f"speech_{voice_choice}_{timestamp}"
+                data_buffer = part.inline_data.data
+                ext = mimetypes.guess_extension(part.inline_data.mime_type) or ".wav"
 
-                inline_data = part.inline_data
-                data_buffer = inline_data.data
-
-                file_extension = mimetypes.guess_extension(inline_data.mime_type)
-                if file_extension is None:
-                    file_extension = ".wav"
-                    data_buffer = convert_to_wav(inline_data.data, inline_data.mime_type)
-
-                full_path = f"{file_name}{file_extension}"
+                full_path = f"{file_name}{ext}"
                 save_binary_file(full_path, data_buffer)
-
-                # Send the file as download
-                return send_from_directory(
-                    directory='.',
-                    path=full_path,
-                    as_attachment=True
-                )
+                return send_from_directory('.', full_path, as_attachment=True)
 
         return jsonify({"error": "No audio generated"}), 500
 
     except Exception as e:
-        # Handle quota errors gracefully
-        error_message = str(e)
-        if "RESOURCE_EXHAUSTED" in error_message or "quota exceeded" in error_message:
+        msg = str(e)
+        if "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower():
             return jsonify({
-                "error": "Your daily TTS quota has been reached. Please contact the administrator to extend your quota."
+                "error": "Your daily TTS quota has been reached. Backup API will be used automatically."
             }), 429
-        return jsonify({"error": error_message}), 500
+        return jsonify({"error": msg}), 500
 
 
 @app.route('/<path:filename>')
@@ -198,5 +210,6 @@ def serve_static(filename):
 # Run the app
 # -------------------------------
 if __name__ == "__main__":
-    print("🚀Services http://127.0.0.1:5000")
+    print("🚀 Server running at: http://127.0.0.1:5000")
     app.run(debug=True)
+
