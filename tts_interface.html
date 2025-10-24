@@ -1,199 +1,273 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Text to Speech Studio</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      color: #fff;
-      height: 100vh;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>First Quantum Voice System</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
 
-    .glass-box {
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(10px);
-      padding: 40px;
-      width: 90%;
-      max-width: 600px;
-    }
+body {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: url('inside.png') no-repeat center center fixed;
+  background-size: cover;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+}
 
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      font-weight: 500;
-    }
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 35px;
+  max-width: 1000px;
+  width: 95%;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+}
 
-    textarea {
-      width: 100%;
-      height: 150px;
-      border: none;
-      border-radius: 10px;
-      padding: 12px;
-      resize: none;
-      font-size: 15px;
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-      outline: none;
-    }
+.column.left, .column.right {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin: 10px;
+}
 
-    label {
-      display: block;
-      margin-top: 20px;
-      font-size: 14px;
-      color: #cfcfcf;
-    }
+.column.left {
+  flex: 0 0 45%;
+}
 
-    select {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-      font-size: 15px;
-      outline: none;
-    }
+.column.right {
+  flex: 0 0 50%;
+  justify-content: center;
+  align-items: center;
+  text-align: center; /* center instructions text */
+}
 
-    button {
-      width: 100%;
-      margin-top: 25px;
-      background: linear-gradient(90deg, #00c6ff, #0072ff);
-      border: none;
-      padding: 12px;
-      border-radius: 10px;
-      color: #fff;
-      font-weight: bold;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
+h1, h2 {
+  font-weight: 600;
+  margin-bottom: 20px;
+}
 
-    button:hover {
-      background: linear-gradient(90deg, #0072ff, #00c6ff);
-    }
+label {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
 
-    .progress-container {
-      width: 100%;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 5px;
-      margin-top: 20px;
-      overflow: hidden;
-      display: none;
-    }
+/* Textarea style */
+textarea {
+  width: 100%;
+  min-height: 180px;
+  border-radius: 14px;
+  border: none;
+  padding: 14px;
+  resize: vertical;
+  font-size: 16px;
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
 
-    .progress-bar {
-      height: 8px;
-      width: 0%;
-      background: #00ffcc;
-      transition: width 0.3s;
-    }
+textarea:focus {
+  outline: none;
+  background: rgba(255,255,255,0.1);
+  box-shadow: 0 0 15px rgba(0,200,255,0.4);
+}
 
-    .output {
-      margin-top: 25px;
-      text-align: center;
-      display: none;
-    }
+/* Modern dropdown */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 20px;
+}
 
-    audio {
-      margin-top: 10px;
-      width: 100%;
-      outline: none;
-    }
-  </style>
+select {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: none;
+  font-size: 16px;
+  background: rgba(0,0,0,0.8); /* black background */
+  color: #fff;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+select:focus {
+  outline: none;
+  background: rgba(0,0,0,0.9);
+  box-shadow: 0 0 15px rgba(0,200,255,0.5);
+}
+
+.select-wrapper::after {
+  content: "▼";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #fff;
+  font-size: 12px;
+}
+
+/* Button style */
+button {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  font-size: 18px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #00c6ff, #0072ff);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: scale(1.03);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  background: linear-gradient(135deg, #0072ff, #00c6ff);
+}
+
+/* Progress & Audio */
+progress {
+  width: 100%;
+  height: 12px;
+  margin-top: 15px;
+  border-radius: 6px;
+}
+
+audio {
+  width: 100%;
+  margin-top: 20px;
+  border-radius: 12px;
+}
+
+/* Info box */
+.info-box {
+  background: linear-gradient(135deg, #0072ff, #00c6ff);
+  padding: 25px;
+  border-radius: 14px;
+  font-size: 0.95em;
+  line-height: 1.6;
+  color: #fff;
+  text-align: left; /* changed from center to left */
+}
+
+
+.info-box ul {
+  padding-left: 0;
+  margin: 0 0 10px 0;
+  list-style-position: inside;
+}
+
+.info-box li {
+  margin-bottom: 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .column.left, .column.right {
+    flex: 1 1 100%;
+    margin: 10px 0;
+  }
+}
+</style>
 </head>
 <body>
-  <div class="glass-box">
-    <h2>🎙️ Gemini TTS Studio</h2>
-    <label for="textInput">Enter text to speak:</label>
-    <textarea id="textInput" placeholder="Type what you want to hear..."></textarea>
+<div class="container">
+  <!-- Left column: Input -->
+  <div class="column left">
+    <h1>First Quantum</h1>
 
-    <label for="voiceSelect">Select voice:</label>
-    <select id="voiceSelect">
-      <option value="male">Male (Enceladus)</option>
-      <option value="female">Female (Aoede)</option>
-    </select>
-
-    <button id="generateBtn">Generate Speech</button>
-
-    <div class="progress-container" id="progressContainer">
-      <div class="progress-bar" id="progressBar"></div>
+    <label for="voice">Select Voice:</label>
+    <div class="select-wrapper">
+      <select id="voice">
+        <option value="male" selected>Male</option>
+        <option value="female">Female</option>
+      </select>
     </div>
 
-    <div class="output" id="output">
-      <p id="statusText">✅ Speech generated successfully!</p>
-      <audio controls id="audioPlayer"></audio>
-    </div>
+    <label for="text">Enter Text:</label>
+    <textarea id="text" placeholder="Type your content here..."></textarea>
+
+    <button onclick="generateSpeech()">Generate Speech</button>
+    <progress id="progressBar" value="0" max="100" class="hidden"></progress>
+    <audio id="audioPlayer" controls class="hidden"></audio>
   </div>
 
-  <script>
-    const generateBtn = document.getElementById('generateBtn');
-    const textInput = document.getElementById('textInput');
-    const voiceSelect = document.getElementById('voiceSelect');
-    const progressContainer = document.getElementById('progressContainer');
-    const progressBar = document.getElementById('progressBar');
-    const output = document.getElementById('output');
-    const audioPlayer = document.getElementById('audioPlayer');
-    const statusText = document.getElementById('statusText');
+  <!-- Right column: Instructions -->
+  <div class="column right">
+    <div class="info-box">
+      <h2>Instructions & Tips</h2>
+      <ul>
+        <li>Select your preferred voice: Male or Female.</li>
+        <li>Type the content you want to listen to in the text area.</li>
+        <li>Click "Generate Speech" and wait for the audio to process.</li>
+        <li>The system preserves natural pronunciation for Zambian local terms.</li>
+        <li>For long text, split into smaller sections for best results.</li>
+      </ul>
+      <p>⚡ Enjoy high-quality synthesized voice output with realistic tone and clarity!</p>
+    </div>
+  </div>
+</div>
 
-    generateBtn.addEventListener('click', async () => {
-      const text = textInput.value.trim();
-      const voice = voiceSelect.value;
+<script>
+async function generateSpeech() {
+  const text = document.getElementById("text").value.trim();
+  const voice = document.getElementById("voice").value;
+  const progressBar = document.getElementById("progressBar");
+  const audioPlayer = document.getElementById("audioPlayer");
 
-      if (!text) {
-        alert('Please enter some text to convert.');
-        return;
-      }
+  if (!text) {
+    alert("Please enter text to voice over speech.");
+    return;
+  }
 
-      progressContainer.style.display = 'block';
-      progressBar.style.width = '0%';
-      output.style.display = 'none';
-      generateBtn.disabled = true;
-      generateBtn.innerText = 'Generating...';
+  progressBar.classList.remove("hidden");
+  progressBar.value = 10;
 
-      // Simulated progress animation
-      let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress = Math.min(progress + 5, 95);
-        progressBar.style.width = progress + '%';
-      }, 400);
-
-      try {
-        const response = await fetch('/generate_speech', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, voice })
-        });
-
-        clearInterval(progressInterval);
-        progressBar.style.width = '100%';
-
-        if (!response.ok) throw new Error('Failed to generate audio.');
-
-        const blob = await response.blob();
-        const audioUrl = URL.createObjectURL(blob);
-
-        audioPlayer.src = audioUrl;
-        output.style.display = 'block';
-        statusText.textContent = '✅ Speech generated successfully!';
-      } catch (error) {
-        statusText.textContent = '❌ Error generating speech.';
-        output.style.display = 'block';
-        console.error(error);
-      } finally {
-        generateBtn.disabled = false;
-        generateBtn.innerText = 'Generate Speech';
-      }
+  try {
+    const response = await fetch("/generate_speech", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, voice }),
     });
-  </script>
+
+    progressBar.value = 70;
+    const result = await response.json();
+
+    if (result.success) {
+      progressBar.value = 100;
+      audioPlayer.src = result.file;
+      audioPlayer.classList.remove("hidden");
+    } else {
+      alert("Failed: " + (result.error || "Unknown error"));
+    }
+  } catch (err) {
+    alert("Error: " + err.message);
+  } finally {
+    setTimeout(() => progressBar.classList.add("hidden"), 2000);
+  }
+}
+</script>
 </body>
 </html>
