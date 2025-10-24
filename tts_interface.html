@@ -48,7 +48,7 @@ body {
   flex: 0 0 50%;
   justify-content: center;
   align-items: center;
-  text-align: center; /* center instructions text */
+  text-align: center;
 }
 
 h1, h2 {
@@ -96,7 +96,7 @@ select {
   border-radius: 14px;
   border: none;
   font-size: 16px;
-  background: rgba(0,0,0,0.8); /* black background */
+  background: rgba(0,0,0,0.8);
   color: #fff;
   appearance: none;
   -webkit-appearance: none;
@@ -165,9 +165,8 @@ audio {
   font-size: 0.95em;
   line-height: 1.6;
   color: #fff;
-  text-align: left; /* changed from center to left */
+  text-align: left;
 }
-
 
 .info-box ul {
   padding-left: 0;
@@ -252,16 +251,26 @@ async function generateSpeech() {
       body: JSON.stringify({ text, voice }),
     });
 
-    progressBar.value = 70;
-    const result = await response.json();
+    if (!response.ok) throw new Error("Failed to generate audio.");
 
-    if (result.success) {
-      progressBar.value = 100;
-      audioPlayer.src = result.file;
-      audioPlayer.classList.remove("hidden");
-    } else {
-      alert("Failed: " + (result.error || "Unknown error"));
-    }
+    progressBar.value = 70;
+
+    const blob = await response.blob(); // treat response as binary
+    const audioUrl = URL.createObjectURL(blob);
+
+    // Play audio
+    audioPlayer.src = audioUrl;
+    audioPlayer.classList.remove("hidden");
+
+    // Trigger download
+    const a = document.createElement("a");
+    a.href = audioUrl;
+    a.download = `speech_${voice}_${Date.now()}.wav`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    progressBar.value = 100;
   } catch (err) {
     alert("Error: " + err.message);
   } finally {
